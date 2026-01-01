@@ -1,7 +1,16 @@
 # Copyright (c) 2025 ByteDance Ltd. and/or its affiliates
 # SPDX-License-Identifier: MIT
 
-"""Command Line Interface for Trae Agent."""
+"""
+Trae Agent 的命令行界面 (CLI)
+
+该模块实现了 Trae Agent 的主要命令行功能，包括：
+- 运行单次任务
+- 交互式会话模式
+- 配置显示
+- 工具列表展示
+- Docker 环境支持
+"""
 
 import asyncio
 import os
@@ -30,8 +39,18 @@ console = Console()
 
 def resolve_config_file(config_file: str) -> str:
     """
-    Resolve config file with backward compatibility.
-    First tries the specified file, then falls back to JSON if YAML doesn't exist.
+    解析配置文件路径，支持向后兼容
+    
+    首先尝试指定的文件，如果 YAML 文件不存在，则回退到 JSON 格式的配置文件
+    
+    Args:
+        config_file: 配置文件路径
+        
+    Returns:
+        str: 实际存在的配置文件路径
+        
+    Raises:
+        SystemExit: 如果配置文件不存在且无法回退到 JSON 格式
     """
     if config_file.endswith(".yaml") or config_file.endswith(".yml"):
         yaml_path = Path(config_file)
@@ -51,7 +70,20 @@ def resolve_config_file(config_file: str) -> str:
 
 
 def check_docker(timeout=3):
-    # 1) Check whether the docker CLI is installed
+    """
+    检查 Docker 环境是否可用
+    
+    Args:
+        timeout: 检查 Docker 守护进程的超时时间（秒）
+        
+    Returns:
+        dict: 包含 Docker 状态信息的字典，包含以下字段：
+            - cli: bool - Docker CLI 是否可用
+            - daemon: bool - Docker 守护进程是否可访问
+            - version: str - Docker 版本号（如果可用）
+            - error: str - 错误信息（如果发生错误）
+    """
+    # 1) 检查 Docker CLI 是否已安装
     if shutil.which("docker") is None:
         return {
             "cli": False,
@@ -59,7 +91,7 @@ def check_docker(timeout=3):
             "version": None,
             "error": "docker CLI not found",
         }
-    # 2) Check whether the Docker daemon is reachable (this makes a real request)
+    # 2) 检查 Docker 守护进程是否可访问（这会发起实际请求）
     try:
         cp = subprocess.run(
             ["docker", "version", "--format", "{{.Server.Version}}"],
@@ -87,7 +119,19 @@ def check_docker(timeout=3):
 
 
 def build_with_pyinstaller():
+    """
+    使用 PyInstaller 构建工具可执行文件
+    
+    为 Docker 模式构建必要的工具二进制文件，包括：
+    - edit_tool: 文件编辑工具
+    - json_edit_tool: JSON 文件编辑工具
+    
+    Note: 这些工具在 Docker 容器中运行，用于执行文件操作
+    """
+    # 清理旧的构建目录
     os.system("rm -rf trae_agent/dist")
+    
+    # 构建 edit_tool
     print("--- Building edit_tool ---")
     subprocess.run(
         [
@@ -98,6 +142,8 @@ def build_with_pyinstaller():
         ],
         check=True,
     )
+    
+    # 构建 json_edit_tool（需要额外的隐藏导入）
     print("\n--- Building json_edit_tool ---")
     subprocess.run(
         [
@@ -109,17 +155,34 @@ def build_with_pyinstaller():
         ],
         check=True,
     )
+    
+    # 创建目标目录并复制构建结果
     os.system("mkdir trae_agent/dist")
     os.system("cp dist/edit_tool/edit_tool trae_agent/dist")
     os.system("cp -r dist/json_edit_tool/_internal trae_agent/dist")
     os.system("cp dist/json_edit_tool/json_edit_tool trae_agent/dist")
+    
+    # 清理临时构建目录
     os.system("rm -rf dist")
 
 
 @click.group()
 @click.version_option(version="0.1.0")
 def cli():
-    """Trae Agent - LLM-based agent for software engineering tasks."""
+    """
+    Trae Agent - 基于 LLM 的软件工程任务代理
+    
+    主要功能包括：
+    - run: 执行单次任务
+    - interactive: 启动交互式会话
+    - show-config: 显示当前配置
+    - tools: 显示可用工具列表
+    
+    使用示例：
+    - trae-cli run "创建 Python 脚本"
+    - trae-cli interactive --provider deepseek
+    - trae-cli show-config
+    """
     pass
 
 
@@ -212,14 +275,37 @@ def run(
     docker_keep: bool = True,
 ):
     """
-    Run is the main function of trae. it runs a task using Trae Agent.
+    Trae Agent 的主要运行函数，用于执行单次任务
+    
+    这是 trae 的核心功能，使用 Trae Agent 来执行用户指定的任务。支持多种运行模式，
+    包括本地模式和 Docker 容器模式。
+    
     Args:
-        tasks: the task that you want your agent to solve. This is required to be in the input
-        model: the model expected to be use
-        working_dir: the working directory of the agent. This should be set either in cli or in the config file
-
-    Return:
-        None (it is expected to be ended after calling the run function)
+        task: 要执行的任务描述字符串
+        file_path: 包含任务描述的文件的路径（与 task 参数互斥）
+        patch_path: 补丁文件路径
+        provider: LLM 提供商（如 anthropic, deepseek, openai 等）
+        model: 使用的具体模型名称
+        model_base_url: 模型 API 的基础 URL
+        api_key: API 密钥（也可以通过环境变量设置）
+        max_steps: 最大执行步数限制
+        working_dir: 代理的工作目录
+        must_patch: 是否必须生成补丁
+        config_file: 配置文件路径，默认 trae_config.yaml
+        trajectory_file: 轨迹文件保存路径
+        console_type: 控制台类型（simple 或 rich）
+        agent_type: 代理类型（目前仅支持 trae_agent）
+        docker_image: Docker 镜像名称（用于容器模式）
+        docker_container_id: 现有 Docker 容器 ID（用于附加模式）
+        dockerfile_path: Dockerfile 路径（用于构建模式）
+        docker_image_file: 本地 Docker 镜像文件路径（用于加载模式）
+        docker_keep: 任务完成后是否保留 Docker 容器
+        
+    Returns:
+        None: 函数执行完成后退出程序
+        
+    Raises:
+        SystemExit: 在配置错误或执行失败时退出程序
     """
 
     docker_config: dict[str, str | None] | None = None
@@ -449,9 +535,24 @@ def interactive(
     agent_type: str | None = "trae_agent",
 ):
     """
-    This function starts an interactive session with Trae Agent.
+    启动与 Trae Agent 的交互式会话
+    
+    该函数创建一个交互式环境，用户可以连续输入多个任务，而无需每次重新启动程序。
+    支持两种控制台模式：simple（简单文本）和 rich（富文本界面）。
+    
     Args:
-        console_type: Type of console to use for the interactive session
+        provider: LLM 提供商（如 anthropic, deepseek, openai 等）
+        model: 使用的具体模型名称
+        model_base_url: 模型 API 的基础 URL
+        api_key: API 密钥（也可以通过环境变量设置）
+        config_file: 配置文件路径，默认 trae_config.yaml
+        max_steps: 最大执行步数限制
+        trajectory_file: 轨迹文件保存路径
+        console_type: 控制台类型（simple 或 rich）
+        agent_type: 代理类型（目前仅支持 trae_agent）
+        
+    Raises:
+        SystemExit: 在配置错误时退出程序
     """
     # Apply backward compatibility for config file
     config_file = resolve_config_file(config_file)
@@ -520,7 +621,23 @@ async def _run_simple_interactive_loop(
     config_file: str,
     trajectory_file: str | None,
 ):
-    """Run the interactive loop for simple console."""
+    """
+    运行简单控制台的交互式循环
+    
+    该函数处理简单文本控制台的交互逻辑，支持以下命令：
+    - help: 显示帮助信息
+    - status: 显示代理状态
+    - clear: 清屏
+    - exit/quit: 退出会话
+    - 其他: 作为任务执行
+    
+    Args:
+        agent: Trae Agent 实例
+        cli_console: 命令行控制台实例
+        trae_agent_config: Trae Agent 配置
+        config_file: 配置文件路径
+        trajectory_file: 轨迹文件路径
+    """
     while True:
         try:
             task = cli_console.get_task_input()
@@ -602,7 +719,19 @@ async def _run_rich_interactive_loop(
     config_file: str,
     trajectory_file: str | None,
 ):
-    """Run the interactive loop for rich console."""
+    """
+    运行富文本控制台的交互式循环
+    
+    该函数启动富文本控制台的 UI 界面，由控制台自身处理交互逻辑。
+    与简单控制台不同，富文本控制台提供更丰富的可视化体验。
+    
+    Args:
+        agent: Trae Agent 实例
+        cli_console: 命令行控制台实例
+        trae_agent_config: Trae Agent 配置
+        config_file: 配置文件路径
+        trajectory_file: 轨迹文件路径
+    """
     # Set up the agent in the rich console so it can handle task execution
     if hasattr(cli_console, "set_agent_context"):
         cli_console.set_agent_context(agent, trae_agent_config, config_file, trajectory_file)
@@ -631,7 +760,24 @@ def show_config(
     api_key: str | None,
     max_steps: int | None,
 ):
-    """Show current configuration settings."""
+    """
+    显示当前配置设置
+    
+    以表格形式展示当前加载的配置信息，包括：
+    - 通用设置（默认提供商、最大步数等）
+    - 提供商特定设置（模型、API 密钥、参数等）
+    
+    Args:
+        config_file: 配置文件路径
+        provider: 可选的 LLM 提供商覆盖
+        model: 可选的模型覆盖
+        model_base_url: 可选的模型基础 URL 覆盖
+        api_key: 可选的 API 密钥覆盖
+        max_steps: 可选的步数限制覆盖
+        
+    Raises:
+        SystemExit: 在配置错误时退出程序
+    """
     # Apply backward compatibility for config file
     config_file = resolve_config_file(config_file)
 
@@ -705,7 +851,12 @@ Using default settings and environment variables.""",
 
 @cli.command()
 def tools():
-    """Show available tools and their descriptions."""
+    """
+    显示可用工具及其描述
+    
+    以表格形式列出所有已注册的工具，包括工具名称和功能描述。
+    如果工具加载失败，会显示错误信息。
+    """
     from .tools import tools_registry
 
     tools_table = Table(title="Available Tools")
@@ -723,7 +874,11 @@ def tools():
 
 
 def main():
-    """Main entry point for the CLI."""
+    """
+    CLI 的主要入口点
+    
+    这是命令行接口的启动函数，当直接运行模块时调用。
+    """
     cli()
 
 
