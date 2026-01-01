@@ -6,31 +6,31 @@
 [![Unit Tests](https://github.com/bytedance/trae-agent/actions/workflows/unit-test.yml/badge.svg)](https://github.com/bytedance/trae-agent/actions/workflows/unit-test.yml)
 [![Discord](https://img.shields.io/discord/1320998163615846420?label=Join%20Discord&color=7289DA)](https://discord.gg/VwaQ4ZBHvC)
 
-**Trae Agent** is an LLM-based agent for general purpose software engineering tasks. It provides a powerful CLI interface that can understand natural language instructions and execute complex software engineering workflows using various tools and LLM providers.
+**Trae Agent** 是一个基于 LLM 的通用软件工程任务智能体。它提供了一个强大的 CLI 接口，能够理解自然语言指令，并使用各种工具和 LLM 提供商执行复杂的软件工程工作流。
 
-For technical details please refer to [our technical report](https://arxiv.org/abs/2507.23370).
+技术细节请参考[我们的技术报告](https://arxiv.org/abs/2507.23370)。
 
-**Project Status:** The project is still being actively developed. Please refer to [docs/roadmap.md](docs/roadmap.md) and [CONTRIBUTING](CONTRIBUTING.md) if you are willing to help us improve Trae Agent.
+**项目状态：** 项目仍在积极开发中。如果您愿意帮助我们改进 Trae Agent，请参考 [docs/roadmap.md](docs/roadmap.md) 和 [CONTRIBUTING](CONTRIBUTING.md)。
 
-**Difference with Other CLI Agents:** Trae Agent offers a transparent, modular architecture that researchers and developers can easily modify, extend, and analyze, making it an ideal platform for **studying AI agent architectures, conducting ablation studies, and developing novel agent capabilities**. This **_research-friendly design_** enables the academic and open-source communities to contribute to and build upon the foundational agent framework, fostering innovation in the rapidly evolving field of AI agents.
+**与其他 CLI 智能体的区别：** Trae Agent 提供了一个透明、模块化的架构，研究人员和开发人员可以轻松修改、扩展和分析，使其成为**研究 AI 智能体架构、进行消融研究和开发新型智能体能力**的理想平台。这种**研究友好型设计**使学术和开源社区能够在基础智能体框架上进行贡献和构建，促进 AI 智能体快速发展的创新。
 
-## ✨ Features
+## ✨ 特性
 
-- 🌊 **Lakeview**: Provides short and concise summarisation for agent steps
-- 🤖 **Multi-LLM Support**: Works with OpenAI, Anthropic, Doubao, Azure, OpenRouter, Ollama and Google Gemini APIs
-- 🛠️ **Rich Tool Ecosystem**: File editing, bash execution, sequential thinking, and more
-- 🎯 **Interactive Mode**: Conversational interface for iterative development
-- 📊 **Trajectory Recording**: Detailed logging of all agent actions for debugging and analysis
-- ⚙️ **Flexible Configuration**: YAML-based configuration with environment variable support
-- 🚀 **Easy Installation**: Simple pip-based installation
+- 🌊 **Lakeview**: 为智能体步骤提供简短而简洁的摘要
+- 🤖 **多 LLM 支持**: 支持 OpenAI、Anthropic、DeepSeek、Doubao、Azure、OpenRouter、Ollama 和 Google Gemini API
+- 🛠️ **丰富的工具生态系统**: 文件编辑、bash 执行、顺序思考等
+- 🎯 **交互模式**: 用于迭代开发的对话式界面
+- 📊 **轨迹记录**: 详细记录所有智能体操作，用于调试和分析
+- ⚙️ **灵活的配置**: 基于 YAML 的配置，支持环境变量
+- 🚀 **简单安装**: 基于 pip 的简单安装
 
-## 🚀 Installation
+## 🚀 安装
 
-### Requirements
+### 要求
 - UV (https://docs.astral.sh/uv/)
-- API key for your chosen provider (OpenAI, Anthropic, Google Gemini, OpenRouter, etc.)
+- 所选提供商的 API 密钥 (OpenAI、Anthropic、DeepSeek、Google Gemini、OpenRouter 等)
 
-### Setup
+### 设置
 
 ```bash
 git clone https://github.com/bytedance/trae-agent.git
@@ -39,49 +39,52 @@ uv sync --all-extras
 source .venv/bin/activate
 ```
 
-## ⚙️ Configuration
+## ⚙️ 配置
 
-### YAML Configuration (Recommended)
+### YAML 配置（推荐）
 
-1. Copy the example configuration file:
+1. 复制示例配置文件：
    ```bash
    cp trae_config.yaml.example trae_config.yaml
    ```
 
-2. Edit `trae_config.yaml` with your API credentials and preferences:
+2. 使用您的 API 凭据和偏好编辑 `trae_config.yaml`：
 
 ```yaml
 agents:
   trae_agent:
     enable_lakeview: true
-    model: trae_agent_model  # the model configuration name for Trae Agent
-    max_steps: 200  # max number of agent steps
-    tools:  # tools used with Trae Agent
+    model: trae_agent_model  # Trae Agent 的模型配置名称
+    max_steps: 200  # 最大智能体步数
+    tools:  # Trae Agent 使用的工具
       - bash
       - str_replace_based_edit_tool
       - sequentialthinking
       - task_done
 
-model_providers:  # model providers configuration
+model_providers:  # 模型提供商配置
   anthropic:
     api_key: your_anthropic_api_key
     provider: anthropic
   openai:
     api_key: your_openai_api_key
     provider: openai
+  deepseek:
+    api_key: your_deepseek_api_key
+    provider: deepseek
 
 models:
   trae_agent_model:
-    model_provider: anthropic
-    model: claude-sonnet-4-20250514
+    model_provider: deepseek
+    model: deepseek-chat
     max_tokens: 4096
     temperature: 0.5
 ```
 
-**Note:** The `trae_config.yaml` file is ignored by git to protect your API keys.
+**注意：** `trae_config.yaml` 文件被 git 忽略以保护您的 API 密钥。
 
-### Using Base URL
-In some cases, we need to use a custom URL for the api. Just add the `base_url` field after `provider`, take the following config as an example:
+### 使用 Base URL
+在某些情况下，我们需要为 API 使用自定义 URL。只需在 `provider` 后添加 `base_url` 字段，以下配置为例：
 
 ```
 openai:
@@ -89,17 +92,19 @@ openai:
     provider: openai
     base_url: https://openrouter.ai/api/v1
 ```
-**Note:** For field formatting, use spaces only. Tabs (\t) are not allowed.
+**注意：** 对于字段格式，仅使用空格。不允许使用制表符 (\t)。
 
-### Environment Variables (Alternative)
+### 环境变量（替代方案）
 
-You can also configure API keys using environment variables and store them in the .env file:
+您也可以使用环境变量配置 API 密钥，并将它们存储在 .env 文件中：
 
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
 export OPENAI_BASE_URL="your-openai-base-url"
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
 export ANTHROPIC_BASE_URL="your-anthropic-base-url"
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
+export DEEPSEEK_BASE_URL="https://api.deepseek.com/v1"
 export GOOGLE_API_KEY="your-google-api-key"
 export GOOGLE_BASE_URL="your-google-base-url"
 export OPENROUTER_API_KEY="your-openrouter-api-key"
@@ -108,9 +113,9 @@ export DOUBAO_API_KEY="your-doubao-api-key"
 export DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3/"
 ```
 
-### MCP Services (Optional)
+### MCP 服务（可选）
 
-To enable Model Context Protocol (MCP) services, add an `mcp_servers` section to your configuration:
+要启用模型上下文协议（MCP）服务，请在配置中添加 `mcp_servers` 部分：
 
 ```yaml
 mcp_servers:
@@ -120,26 +125,26 @@ mcp_servers:
       - "@playwright/mcp@0.0.27"
 ```
 
-**Configuration Priority:** Command-line arguments > Configuration file > Environment variables > Default values
+**配置优先级：** 命令行参数 > 配置文件 > 环境变量 > 默认值
 
-**Legacy JSON Configuration:** If using the older JSON format, see [docs/legacy_config.md](docs/legacy_config.md). We recommend migrating to YAML.
+**旧版 JSON 配置：** 如果使用较旧的 JSON 格式，请参阅 [docs/legacy_config.md](docs/legacy_config.md)。我们建议迁移到 YAML。
 
-## 📖 Usage
+## 📖 使用
 
-### Basic Commands
+### 基本命令
 
 ```bash
-# Simple task execution
+# 简单任务执行
 trae-cli run "Create a hello world Python script"
 
-# Check configuration
+# 检查配置
 trae-cli show-config
 
-# Interactive mode
+# 交互模式
 trae-cli interactive
 ```
 
-### Provider-Specific Examples
+### 特定提供商示例
 
 ```bash
 # OpenAI
@@ -148,69 +153,73 @@ trae-cli run "Fix the bug in main.py" --provider openai --model gpt-4o
 # Anthropic
 trae-cli run "Add unit tests" --provider anthropic --model claude-sonnet-4-20250514
 
+# DeepSeek
+trae-cli run "Optimize this algorithm" --provider deepseek --model deepseek-chat
+
 # Google Gemini
 trae-cli run "Optimize this algorithm" --provider google --model gemini-2.5-flash
 
-# OpenRouter (access to multiple providers)
+# OpenRouter（访问多个提供商）
 trae-cli run "Review this code" --provider openrouter --model "anthropic/claude-3-5-sonnet"
 trae-cli run "Generate documentation" --provider openrouter --model "openai/gpt-4o"
+trae-cli run "Analyze code quality" --provider openrouter --model "deepseek/deepseek-chat"
 
 # Doubao
 trae-cli run "Refactor the database module" --provider doubao --model doubao-seed-1.6
 
-# Ollama (local models)
+# Ollama（本地模型）
 trae-cli run "Comment this code" --provider ollama --model qwen3
 ```
 
-### Advanced Options
+### 高级选项
 
 ```bash
-# Custom working directory
+# 自定义工作目录
 trae-cli run "Add tests for utils module" --working-dir /path/to/project
 
-# Save execution trajectory
+# 保存执行轨迹
 trae-cli run "Debug authentication" --trajectory-file debug_session.json
 
-# Force patch generation
+# 强制生成补丁
 trae-cli run "Update API endpoints" --must-patch
 
-# Interactive mode with custom settings
+# 自定义设置的交互模式
 trae-cli interactive --provider openai --model gpt-4o --max-steps 30
 ```
 
-## Docker Mode Commands
-### Preparation
-**Important**: You need to make sure Docker is configured in your environment.
+## Docker 模式命令
+### 准备
+**重要：** 您需要确保 Docker 已在环境中配置好。
 
-### Usage
+### 使用
 ```bash
-# Specify a Docker image to run the task in a new container
+# 指定 Docker 镜像在新容器中运行任务
 trae-cli run "Add tests for utils module" --docker-image python:3.11
 
-# Specify a Docker image to run the task in a new container and mount the directory
+# 指定 Docker 镜像并在新容器中挂载目录
 trae-cli run "write a script to print helloworld" --docker-image python:3.12 --working-dir test_workdir/
 
-# Attach to an existing Docker container by ID (`--working-dir` is invalid with `--docker-container-id`)
+# 通过 ID 连接到现有的 Docker 容器（`--working-dir` 与 `--docker-container-id` 一起使用时无效）
 trae-cli run "Update API endpoints" --docker-container-id 91998a56056c
 
-# Specify an absolute path to a Dockerfile to build an environment
+# 指定 Dockerfile 的绝对路径来构建环境
 trae-cli run "Debug authentication" --dockerfile-path test_workspace/Dockerfile
 
-# Specify a path to a local Docker image file (tar archive) to load
+# 指定本地 Docker 镜像文件（tar 存档）以加载
 trae-cli run "Fix the bug in main.py" --docker-image-file test_workspace/trae_agent_custom.tar
 
-# Remove the Docker container after finishing the task (keep default)
+# 完成任务后删除 Docker 容器（默认保持）
 trae-cli run "Add tests for utils module" --docker-image python:3.11 --docker-keep false
 ```
 
-### Interactive Mode Commands
+### 交互模式命令
 
-In interactive mode, you can use:
-- Type any task description to execute it
-- `status` - Show agent information
-- `help` - Show available commands
-- `clear` - Clear the screen
-- `exit` or `quit` - End the session
+在交互模式中，您可以使用：
+- 输入任何任务描述来执行它
+- `status` - 显示智能体信息
+- `help` - 显示可用命令
+- `clear` - 清屏
+- `exit` 或 `quit` - 结束会话
 
 ## 🛠️ Advanced Features
 
